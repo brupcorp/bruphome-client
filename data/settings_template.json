@@ -1,0 +1,12 @@
+{
+	"wifi": {
+		"ssid": "WIFINAME",
+		"password": "WIFIPASS",
+		"hostname": "CONTROLLERHOSTNAME"
+	},
+	"server":{
+		"host": "https:\\SERVER",
+		"port": "PORT"
+	},
+	"sharedSecret": "RANDOMKEY"
+}

@@ -2,6 +2,8 @@
 #include "ArduinoJson.h"
 #include "LittleFS.h"
 #include <ESP8266WiFi.h>
+
+// TODO: unlink from library
 #include <SocketIOclient.h>
 
 #define MAINHERE

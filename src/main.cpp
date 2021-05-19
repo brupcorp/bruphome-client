@@ -6,37 +6,10 @@
 // TODO: unlink from library
 #include <SocketIOclient.h>
 
-#define MAINHERE
 #include "handlers.h"
 
-#define str(v) (v.as<String>())
-
 DynamicJsonDocument settings(1024);
-SocketIOclient sock;
-
-void messageHandler(String event, JsonDocument& data);
-
-void wsSend(String event, JsonDocument& data){
-	DynamicJsonDocument doc(2048);
-	doc.add(event);
-	doc.add(data.as<JsonObject>());
-	String s;
-	serializeJson(doc, s);
-	sock.sendEVENT(s);
-}
-
-void wsEvent(socketIOmessageType_t type, byte* payload, size_t length){
-	DynamicJsonDocument doc(2048);
-	if(type == sIOtype_CONNECT)
-		messageHandler("connected", doc);
-	else if(type == sIOtype_DISCONNECT)
-		messageHandler("disconnected", doc);
-	else if(type == sIOtype_EVENT){
-		deserializeJson(doc, (char*)payload);
-		DynamicJsonDocument d = doc[1];
-		messageHandler(str(doc[0]), d);
-	}
-}
+RequestHandler* sock;
 
 void setup() {
 	Serial.begin(9600);
@@ -69,23 +42,34 @@ void setup() {
 	Serial.print(str(settings["server"]["host"]));
 	Serial.print(":");
 	Serial.println(settings["server"]["port"].as<short>());
-	sock.begin(str(settings["server"]["host"]), settings["server"]["port"].as<short>());
-	sock.onEvent(wsEvent);
-
+	sock = new RequestHandler(settings["server"]["host"], settings["server"]["port"]);
+	
 	Serial.println("init done!");
 
 }
 
 void loop() {
-	sock.loop();
+	sock->loop();
 }
 
-void messageHandler(String event, JsonDocument& data){
-	for(unsigned idx = 0; idx < (sizeof(events)/sizeof(eventmap)); idx++){
-		if(events[idx].key == event){
-			events[idx].handler(data);
-			break;
-		}
-			
-	}
+void connectedHandler(JsonObjectConst, JsonObject result){
+	result["id"] = "testId";
+	Serial.println("connected");
+}
+
+void disconnectedHandler(JsonObjectConst,JsonObject){
+	Serial.println("disconnected");
+}
+
+void testHandler(JsonObjectConst data, JsonObject result){
+	Serial.print("got test! data: ");
+	serializeJson(data, Serial);
+	Serial.println();
+	result.set(data);
+}
+
+void RequestHandler::registerAllEvents(){
+	registerEvent("connected", connectedHandler);
+	registerEvent("disconnected", disconnectedHandler);
+	registerEvent("test", testHandler);
 }

@@ -40,11 +40,12 @@ class SocketIOclient : protected WebSocketsClient {
 #ifdef __AVR__
     typedef void (*SocketIOclientEvent)(socketIOmessageType_t type, uint8_t * payload, size_t length);
 #else
-    typedef std::function<void(socketIOmessageType_t type, uint8_t * payload, size_t length)> SocketIOclientEvent;
+    typedef std::function<void(socketIOmessageType_t type, uint8_t * payload, size_t length, void* additional)> SocketIOclientEvent;
 #endif
 
     SocketIOclient(void);
     virtual ~SocketIOclient(void);
+	void* additional;
 
     void begin(const char * host, uint16_t port, const char * url = "/socket.io/?EIO=3", const char * protocol = "arduino");
     void begin(String host, uint16_t port, String url = "/socket.io/?EIO=3", String protocol = "arduino");
@@ -85,7 +86,7 @@ class SocketIOclient : protected WebSocketsClient {
     SocketIOclientEvent _cbEvent;
     virtual void runIOCbEvent(socketIOmessageType_t type, uint8_t * payload, size_t length) {
         if(_cbEvent) {
-            _cbEvent(type, payload, length);
+            _cbEvent(type, payload, length, additional);
         }
     }
 

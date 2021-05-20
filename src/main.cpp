@@ -67,7 +67,7 @@ void testHandler(JsonObjectConst data, JsonObject result){
 	Serial.println();
 	result.set(data);
 }
-
+//Light event handler
 void light(JsonObjectConst data, JsonObject result){
 	pinMode(LED_BUILTIN, OUTPUT);
 	if(data["status"] == "on"){

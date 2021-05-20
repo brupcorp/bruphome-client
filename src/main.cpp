@@ -41,7 +41,7 @@ void setup() {
 	Serial.print(str(settings["server"]["host"]));
 	Serial.print(":");
 	Serial.println(settings["server"]["port"].as<short>());
-	sock = new RequestHandler(settings["server"]["host"], settings["server"]["port"], new TestDevice());
+	sock = new RequestHandler(settings["server"]["host"], settings["server"]["port"], new DeviceLamp());
 	
 	sock->onConnect([](JsonObject dataToSend){
 		dataToSend["id"] = settings["secretID"];

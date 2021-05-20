@@ -4,11 +4,13 @@
 class RequestHandler;
 
 class Device{
-	private:
+	protected:
 		virtual void registerAllEvents(RequestHandler* handler) = 0;
 
 	friend class RequestHandler;
 };
 
-#define MKDevice(x) class x  : public Device { void registerAllEvents(RequestHandler* handler);}
+#define MKSubDevice(x, y) class x  : public y { protected: virtual void registerAllEvents(RequestHandler* handler);}
+#define MKDevice(x) MKSubDevice(x, Device)
+
 #endif

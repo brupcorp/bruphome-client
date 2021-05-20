@@ -8,5 +8,5 @@
 		"host": "https:\\SERVER",
 		"port": "PORT"
 	},
-	"sharedSecret": "RANDOMKEY"
+	"secretID": "SETTHISTOSOMETHINGRANDOM"
 }

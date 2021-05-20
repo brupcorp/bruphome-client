@@ -1,15 +1,19 @@
-#include "handlers.h"
+#include "RequestHandler.h"
 
 void RequestHandler::wsHandle(socketIOmessageType_t type, byte* payload, size_t length, void* additional){
 	RequestHandler* h = (RequestHandler*)additional;
 	DynamicJsonDocument doc(2048);
 	doc.to<JsonObject>();
 	if(type == sIOtype_CONNECT){
-		doc["requestID"] = "handshake";
-		h->handleEvent("connected", doc.as<JsonObject>());
+		h->connectionEstablished(doc["result"].to<JsonObject>());
+		JsonArray final = doc["final"].to<JsonArray>();
+		final.add("handshake");
+		final.add(doc["result"].as<JsonObject>());
+		String s;
+		serializeJson(final, s);
+		h->sock.sendEVENT(s);
 	}else if(type == sIOtype_DISCONNECT){
-		h->handleEvent("disconnected", doc.as<JsonObject>());
-		// lets do something evil >:)
+		h->disconnectedClient();
 		delay(15000);
 		((WebSocketsClient*)&(h->sock))->disconnect();
 	}else if(type == sIOtype_EVENT){
@@ -45,9 +49,18 @@ send:
 
 }
 
-RequestHandler::RequestHandler(String host, short port){
+RequestHandler::RequestHandler(String host, short port, Device* device){
+	myDevice = device;
 	sock.begin(host, port);
 	sock.additional = this;
 	sock.onEvent(RequestHandler::wsHandle);
-	registerAllEvents();
+	device->registerAllEvents(this);
+}
+
+void RequestHandler::onConnect(event_handler_out handler){
+	connectionEstablished = handler;
+}
+
+void RequestHandler::onDisconnect(callback handler){
+	disconnectedClient = handler;
 }

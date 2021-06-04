@@ -1,13 +1,13 @@
-#include "DevicesDefinitions.h"
+#include <devices/TestDevice.h>
 
-void testHandler(JsonObjectConst data, JsonObject result){
+void TestDevice::testHandler(JsonObjectConst data, JsonObject result){
 	Serial.print("got test! data: ");
 	serializeJson(data, Serial);
 	Serial.println();
 	result.set(data);
 }
 
-void light(JsonObjectConst data, JsonObject result){
+void TestDevice::light(JsonObjectConst data, JsonObject result){
 	pinMode(LED_BUILTIN, OUTPUT);
 	if(data["status"] == "on"){
 		digitalWrite(LED_BUILTIN, 0);
@@ -31,6 +31,6 @@ void light(JsonObjectConst data, JsonObject result){
 }
 
 void TestDevice::registerAllEvents(RequestHandler* handler){
-	handler->registerEvent("test", testHandler);
-	handler->registerEvent("LightOn", light);
+	handler->registerEvent("test", bindEvent(TestDevice::testHandler));
+	handler->registerEvent("LightOn", bindEvent(TestDevice::light));
 }

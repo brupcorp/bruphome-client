@@ -5,14 +5,15 @@
 #include "ArduinoJson.h"
 #include <SocketIOclient.h>
 #include "Device.h"
+#include "EventInvoker.h"
 
 #define str(v) (v.as<String>())
 
-typedef void (*event_handler)(JsonObjectConst,JsonObject);
 typedef void (*event_handler_out)(JsonObject);
 typedef void (*callback)();
+typedef void (*invoker)(JsonObjectConst,JsonObject,void*);
 
-struct eventmap { String key; event_handler handler; };
+struct eventmap { String key; EventInvoker* handler; };
 
 class RequestHandler{
 	private:
@@ -29,7 +30,7 @@ class RequestHandler{
 		void onConnect(event_handler_out handler);
 		void onDisconnect(callback handler);
 		void loop() { sock.loop(); };
-		void registerEvent(String name, event_handler handler) { events.push_back({name, handler}); };
+		void registerEvent(String name, EventInvoker* handler) { events.push_back({name, handler}); };
 };
 
 #endif

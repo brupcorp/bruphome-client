@@ -31,7 +31,7 @@ void RequestHandler::handleEvent(String event, JsonObject request){
 
 	for(eventmap& e : events){
 		if(event == e.key){
-			e.handler(request["data"], response);
+			e.handler->Invoke(request["data"], response);
 			goto send;
 		}
 	}

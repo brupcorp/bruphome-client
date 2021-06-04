@@ -10,5 +10,7 @@ class Device{
 	friend class RequestHandler;
 };
 
-#define MKDevice(x) class x  : public Device { void registerAllEvents(RequestHandler* handler);}
+#include "RequestHandler.h"
+#define bindEvent(x) (new EventInvoker(&x, this))
+
 #endif

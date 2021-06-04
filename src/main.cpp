@@ -6,7 +6,7 @@
 // TODO: unlink from library
 #include <SocketIOclient.h>
 
-#include "DevicesDefinitions.h"
+#include <devices/TestDevice.h>
 
 DynamicJsonDocument settings(1024);
 RequestHandler* sock;

@@ -6,7 +6,7 @@
 // TODO: unlink from library
 #include <SocketIOclient.h>
 
-#include <devices/TestDevice.h>
+#include <devices/binaryDevice.h>
 
 DynamicJsonDocument settings(1024);
 RequestHandler* sock;
@@ -41,7 +41,7 @@ void setup() {
 	Serial.print(str(settings["server"]["host"]));
 	Serial.print(":");
 	Serial.println(settings["server"]["port"].as<short>());
-	sock = new RequestHandler(settings["server"]["host"], settings["server"]["port"], new TestDevice());
+	sock = new RequestHandler(settings["server"]["host"], settings["server"]["port"], new BinaryDevice());
 	
 	sock->onConnect([](JsonObject dataToSend){
 		dataToSend["id"] = settings["secretID"];

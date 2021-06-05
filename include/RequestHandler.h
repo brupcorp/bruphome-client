@@ -3,9 +3,11 @@
 
 #include "WString.h"
 #include "ArduinoJson.h"
+#include <Arduino.h>
 #include <SocketIOclient.h>
 #include "Device.h"
 #include "EventInvoker.h"
+#include "Task.h"
 
 #define str(v) (v.as<String>())
 
@@ -13,13 +15,14 @@ typedef void (*event_handler_out)(JsonObject);
 typedef void (*callback)();
 typedef void (*invoker)(JsonObjectConst,JsonObject,void*);
 
-struct eventmap { String key; EventInvoker* handler; };
+struct event;
 
 class RequestHandler{
 	private:
 		event_handler_out connectionEstablished = 0;
 		callback disconnectedClient = 0;
-		std::vector<eventmap> events;
+		std::vector<event> events;
+		std::vector<Task*> scheduler;
 		SocketIOclient sock;
 		Device* myDevice;
 
@@ -29,8 +32,9 @@ class RequestHandler{
 		RequestHandler(String host, short port, Device* device);
 		void onConnect(event_handler_out handler);
 		void onDisconnect(callback handler);
-		void loop() { sock.loop(); };
-		void registerEvent(String name, EventInvoker* handler) { events.push_back({name, handler}); };
+		void loop();
+		void registerEvent(String name, EventInvoker* handler);
+		void registerRepeatingTask(Task* task);
 };
 
 #endif

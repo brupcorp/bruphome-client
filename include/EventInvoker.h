@@ -24,4 +24,25 @@ class EventInvoker{
 
 };
 
+// fuck c++ and templates
+class TaskInvoker{
+	private:
+		void* helperData;
+		void (*AliasInvoker)(void*);
+
+	public:
+
+		void Invoke() { AliasInvoker(helperData); };
+
+		template<class T, class fptr> TaskInvoker(fptr function, T* cls){
+			struct helper { fptr f; T* d; };
+			helperData = (void*)new helper({function, cls});
+			AliasInvoker = [](void* d){
+				helper* h = (helper*)d;
+				((h->d)->*(h->f))();
+			};
+		};
+
+};
+
 #endif

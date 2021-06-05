@@ -30,7 +30,26 @@ void TestDevice::light(JsonObjectConst data, JsonObject result){
 	}
 }
 
-void TestDevice::registerAllEvents(RequestHandler* handler){
+void TestDevice::repeatingTest(){
+	uint64 curDelay = repeatingTask->getDelay();
+	Serial.printf("task! currentDelay: %llu\n", curDelay);
+	repeatingTask->setDelay(curDelay + 500);
+}
+
+void TestDevice::repeatingTestTask2(){
+	uint64 curDelay = repeatingTask2->getDelay();
+	Serial.printf("task2! currentDelay: %llu\n", curDelay);
+	repeatingTask2->setDelay(curDelay + 500);
+}
+
+void TestDevice::registerAllEvents(){
 	handler->registerEvent("test", bindEvent(TestDevice::testHandler));
 	handler->registerEvent("LightOn", bindEvent(TestDevice::light));
+
+	repeatingTask = new Task(bindTask(TestDevice::repeatingTest), 1000);
+	repeatingTask2 = new Task(bindTask(TestDevice::repeatingTestTask2), 1500);
+
+	handler->registerRepeatingTask(repeatingTask);
+	handler->registerRepeatingTask(repeatingTask2);
+
 }

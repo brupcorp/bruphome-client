@@ -4,10 +4,16 @@
 #include "../Device.h"
 
 class TestDevice : public Device {
-	void registerAllEvents(RequestHandler* handler);
+
+	Task* repeatingTask;
+	Task* repeatingTask2;
+
+	void registerAllEvents();
 
 	void light(JsonObjectConst data, JsonObject result);
 	void testHandler(JsonObjectConst data, JsonObject result);
+	void repeatingTest();
+	void repeatingTestTask2();
 };
 
 #endif

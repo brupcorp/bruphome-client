@@ -1,10 +1,6 @@
 #include <Arduino.h>
-#include "ArduinoJson.h"
 #include "LittleFS.h"
 #include <ESP8266WiFi.h>
-
-// TODO: unlink from library
-#include <SocketIOclient.h>
 
 #include <devices/TestDevice.h>
 
@@ -18,7 +14,7 @@ void setup() {
 	delay(1000);
 
 	File f = LittleFS.open("/settings.json", "r");
-	if(!f) Serial.println("file open failed");
+	if(!f) { Serial.println("config load failed! halting!"); delay(UINT_MAX); }
 
 	deserializeJson(settings, f.readString());
 	f.close();
@@ -30,7 +26,7 @@ void setup() {
 
 	Serial.print("Connecting");
 	while(WiFi.status() != WL_CONNECTED) {
-		delay(1000);
+		delay(500);
 		Serial.print(".");
 	}
 	Serial.println();
@@ -41,7 +37,7 @@ void setup() {
 	Serial.print(str(settings["server"]["host"]));
 	Serial.print(":");
 	Serial.println(settings["server"]["port"].as<short>());
-	sock = new RequestHandler(settings["server"]["host"], settings["server"]["port"], new TestDevice());
+	sock = new RequestHandler(settings["server"]["host"], settings["server"]["port"], new TestDevice(), settings["server"]["ssl"]);
 	
 	sock->onConnect([](JsonObject dataToSend){
 		dataToSend["id"] = settings["secretID"];

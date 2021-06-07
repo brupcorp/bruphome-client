@@ -29,7 +29,7 @@ class RequestHandler{
 		static void wsHandle(socketIOmessageType_t type, byte* payload, size_t length, void* additional);
 		void handleEvent(String event, JsonObject data);
 	public:
-		RequestHandler(String host, short port, Device* device);
+		RequestHandler(String host, short port, Device* device, bool useSSL);
 		void onConnect(event_handler_out handler);
 		void onDisconnect(callback handler);
 		void loop();

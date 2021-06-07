@@ -117,8 +117,8 @@ class WebSocketsClient : protected WebSockets {
 #else
     const uint8_t * _fingerprint;
     BearSSL::X509List * _CA_cert;
-    BearSSL::X509List * _client_cert;
-    BearSSL::PrivateKey * _client_key;
+    BearSSL::X509List * _client_cert = 0;
+    BearSSL::PrivateKey * _client_key = 0;
 #define SSL_FINGERPRINT_IS_SET (_fingerprint != NULL)
 #define SSL_FINGERPRINT_NULL NULL
 #endif

@@ -12,6 +12,21 @@ RequestHandler* sock;
 
 SocketIO sio;
 
+void handle(EventType t, const char* payload, unsigned length){
+		switch (t)
+		{
+		case EventType::Connect:
+			sio.sendSocketIOEvent("[\"test\"]");
+			break;
+		case EventType::Event:
+			Serial.println(payload);
+			break;
+		case EventType::Disconnect:
+			Serial.println("sock.io disconnected");
+			break;
+		}
+	}
+
 void setup() {
 	Serial.begin(9600);
 	LittleFS.begin();
@@ -43,6 +58,9 @@ void setup() {
 	Serial.print(":");
 	Serial.println(settings["server"]["port"].as<short>());
 	sio.init("192.168.3.22", 3000, false, "/");
+
+	sio.onEvent(handle);
+
 	sock = new RequestHandler(settings["server"]["host"], settings["server"]["port"], new TestDevice(), settings["server"]["ssl"]);
 	
 	sock->onConnect([](JsonObject dataToSend){

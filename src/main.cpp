@@ -4,8 +4,13 @@
 
 #include <devices/TestDevice.h>
 
+#define DEBUGSOCK
+#include "SockIO.h"
+
 DynamicJsonDocument settings(1024);
 RequestHandler* sock;
+
+SocketIO sio;
 
 void setup() {
 	Serial.begin(9600);
@@ -37,6 +42,7 @@ void setup() {
 	Serial.print(str(settings["server"]["host"]));
 	Serial.print(":");
 	Serial.println(settings["server"]["port"].as<short>());
+	sio.init("192.168.3.22", 3000, false, "/");
 	sock = new RequestHandler(settings["server"]["host"], settings["server"]["port"], new TestDevice(), settings["server"]["ssl"]);
 	
 	sock->onConnect([](JsonObject dataToSend){
@@ -53,5 +59,6 @@ void setup() {
 }
 
 void loop() {
-	sock->loop();
+	//sock->loop();
+	sio.loop();
 }

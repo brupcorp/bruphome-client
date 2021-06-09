@@ -199,7 +199,11 @@ class SocketIO {
 		this->port = port;
 		this->ns = ns;
 
-		if(ssl) c = new WiFiClientSecure();
+		if(ssl) {
+			WiFiClientSecure* tmp = new WiFiClientSecure();
+			tmp->setInsecure(); // temporary
+			c = tmp;
+		}
 		else c = new WiFiClient();
 
 		uint8_t randomKey[16] = {0};

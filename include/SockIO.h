@@ -31,15 +31,14 @@ class SocketIO {
 	String ns;
 	String host;
 	short port;
-	bool ssl;
 
 	String path = "/socket.io/?EIO=4&transport=websocket";
 
 	String secKey;
-	WiFiClient c;
+	Client* c;
 
 	bool lastConnectedState = false;
-	bool connected() { return c.connected(); }
+	bool connected() { return c->connected(); }
 
 	int state = 0;
 	bool headerOk = false;
@@ -108,8 +107,8 @@ class SocketIO {
 		for(size_t x = 0; x < length; x++)
             dataCopy[x] = (dataCopy[x] ^ mask[x % 4]);
 
-		if(c.write(hdrBegin, hdrLen) != hdrLen) return false;
-		if(c.write(dataCopy, length) != length) return false;
+		if(c->write((uint8_t*)hdrBegin, hdrLen) != hdrLen) return false;
+		if(c->write((uint8_t*)dataCopy, length) != length) return false;
 
 		delete[] dataCopy;
 
@@ -186,7 +185,9 @@ class SocketIO {
 		this->host = host;
 		this->port = port;
 		this->ns = ns;
-		this->ssl = ssl;
+
+		if(ssl) c = new WiFiClientSecure();
+		else c = new WiFiClient();
 
 		uint8_t randomKey[16] = {0};
 
@@ -204,10 +205,10 @@ class SocketIO {
 
 	void loop() {
 		if(connected()) {
-			if(c.available() > 0) {
+			if(c->available() > 0) {
 				switch(state) {
 				case 0: {
-					String hdr = c.readStringUntil('\n');
+					String hdr = c->readStringUntil('\n');
 					hdr.trim(); // remove \r
 
 					if(hdr.startsWith("HTTP/1.1")) {
@@ -221,7 +222,7 @@ class SocketIO {
 							state = 1; // switch to connected websocket state
 							Debug("websocket is now in connected state!\n");
 						} else {
-							c.stop();
+							c->stop();
 							state = 0;
 							Debug("rejecting connection! something is not right\n");
 						}
@@ -243,8 +244,8 @@ class SocketIO {
 				case 1: {
 					switch(wsReadState) {
 					case 0: { // initial header parse state
-						if(c.available() < 2) return;
-						c.readBytes(buffer, 2);
+						if(c->available() < 2) return;
+						c->readBytes(buffer, 2);
 
 						curBuffPtr = buffer;
 						wsHeader.fin = ((*curBuffPtr >> 7) & 0x01);
@@ -269,8 +270,8 @@ class SocketIO {
 						break;
 					}
 					case 1: {						  // read extended length 1
-						if(c.available() < 2) return; // wait for two additional bytes
-						c.readBytes(curBuffPtr, 2);
+						if(c->available() < 2) return; // wait for two additional bytes
+						c->readBytes(curBuffPtr, 2);
 						wsHeader.payloadLen = *(short*)curBuffPtr;
 						curBuffPtr += 2;
 
@@ -281,8 +282,8 @@ class SocketIO {
 						break;
 					}
 					case 2: {						  // read extended length 2
-						if(c.available() < 8) return; // wait for 8 additional bytes
-						c.readBytes(curBuffPtr, 8);
+						if(c->available() < 8) return; // wait for 8 additional bytes
+						c->readBytes(curBuffPtr, 8);
 
 						if(*((unsigned*)buffer[2]) != 0) wsHeader.payloadLen = 0xFFFFFFFF; // really too big!
 						else
@@ -297,18 +298,18 @@ class SocketIO {
 						break;
 					}
 					case 3: {						  // read mask key
-						if(c.available() < 4) return; // wait for 4 mask key bytes
-						c.readBytes(curBuffPtr, 4);
+						if(c->available() < 4) return; // wait for 4 mask key bytes
+						c->readBytes(curBuffPtr, 4);
 						wsHeader.maskKey = (uint8_t*)curBuffPtr;
 						wsReadState = 4;
 						break;
 					}
 					case 4: { // read the payload
-						if(c.available() < wsHeader.payloadLen) return;
+						if(c->available() < wsHeader.payloadLen) return;
 						if(payloadBuffer) delete[] payloadBuffer;
 						payloadBuffer = new char[wsHeader.payloadLen + 1];
 						payloadBuffer[wsHeader.payloadLen] = 0; // nullterminate for safety
-						c.readBytes(payloadBuffer, wsHeader.payloadLen);
+						c->readBytes(payloadBuffer, wsHeader.payloadLen);
 
 						if(wsHeader.mask) {
 							// decode XOR
@@ -344,8 +345,8 @@ class SocketIO {
 
 			Debug("Sending Request:\n%s", request.c_str());
 
-			c.connect(host, port);
-			c.write(request.c_str());
+			c->connect(host.c_str(), port);
+			c->write((uint8_t*)request.c_str(), request.length());
 			state = 0; // initial state
 			lastConnectionAttempt = millis();
 		}

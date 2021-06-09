@@ -4,28 +4,8 @@
 
 #include <devices/TestDevice.h>
 
-#define DEBUGSOCK
-#include "SockIO.h"
-
 DynamicJsonDocument settings(1024);
 RequestHandler* sock;
-
-SocketIO sio;
-
-void handle(EventType t, const char* payload, unsigned length){
-		switch (t)
-		{
-		case EventType::Connect:
-			sio.sendSocketIOEvent("[\"test\"]");
-			break;
-		case EventType::Event:
-			Serial.println(payload);
-			break;
-		case EventType::Disconnect:
-			Serial.println("sock.io disconnected");
-			break;
-		}
-	}
 
 void setup() {
 	Serial.begin(9600);
@@ -57,9 +37,6 @@ void setup() {
 	Serial.print(str(settings["server"]["host"]));
 	Serial.print(":");
 	Serial.println(settings["server"]["port"].as<short>());
-	sio.init("192.168.3.22", 3000, false, "/");
-
-	sio.onEvent(handle);
 
 	sock = new RequestHandler(settings["server"]["host"], settings["server"]["port"], new TestDevice(), settings["server"]["ssl"]);
 	
@@ -77,6 +54,5 @@ void setup() {
 }
 
 void loop() {
-	//sock->loop();
-	sio.loop();
+	sock->loop();
 }

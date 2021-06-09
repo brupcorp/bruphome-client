@@ -42,6 +42,6 @@ void TestDevice::registerAllEvents(){
 
 	repeatingTask = new Task(bindTask(TestDevice::repeatingTest), 1000);
 
-	handler->registerRepeatingTask(repeatingTask);
+	//handler->registerRepeatingTask(repeatingTask);
 
 }

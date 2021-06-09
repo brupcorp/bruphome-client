@@ -4,7 +4,7 @@
 #include "WString.h"
 #include "ArduinoJson.h"
 #include <Arduino.h>
-#include <SocketIOclient.h>
+#include <SockIO.h>
 #include "Device.h"
 #include "EventInvoker.h"
 #include "Task.h"
@@ -23,10 +23,10 @@ class RequestHandler{
 		callback disconnectedClient = 0;
 		std::vector<event> events;
 		std::vector<Task*> scheduler;
-		SocketIOclient sock;
+		SocketIO sock;
 		Device* myDevice;
 
-		static void wsHandle(socketIOmessageType_t type, byte* payload, size_t length, void* additional);
+		static void wsHandle(EventType type, const char* payload, unsigned length, void* additional);
 		void handleEvent(String event, JsonObject data);
 	public:
 		RequestHandler(String host, short port, Device* device, bool useSSL);

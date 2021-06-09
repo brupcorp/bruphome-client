@@ -1,25 +1,32 @@
+//#define DEBUGSOCK
 #include "RequestHandler.h"
 
 struct event { String key; EventInvoker* handler; };
 
-void RequestHandler::wsHandle(socketIOmessageType_t type, byte* payload, size_t length, void* additional){
+void RequestHandler::wsHandle(EventType type, const char* payload, unsigned length, void* additional){
 	RequestHandler* h = (RequestHandler*)additional;
-	StaticJsonDocument<4096> doc;
+	DynamicJsonDocument doc(4096); // please no stackoverflow pretty please
 	doc.to<JsonObject>();
-	if(type == sIOtype_CONNECT){
-		JsonArray final = doc["final"].to<JsonArray>();
-		final.add("handshake");
-		h->connectionEstablished(final.createNestedObject());
-		String s;
-		serializeJson(final, s);
-		h->sock.sendEVENT(s);
-	}else if(type == sIOtype_DISCONNECT){
-		h->disconnectedClient();
-		delay(15000);
-		((WebSocketsClient*)&(h->sock))->disconnect(); // wtf is this line - cursed af
-	}else if(type == sIOtype_EVENT){
-		deserializeJson(doc, (char*)payload);
-		h->handleEvent(str(doc[0]), doc[1].as<JsonObject>());
+	switch(type){
+		case EventType::Connect:{
+			JsonArray final = doc["final"].to<JsonArray>();
+			final.add("handshake");
+			h->connectionEstablished(final.createNestedObject());
+			String s;
+			serializeJson(final, s);
+			h->sock.sendSocketIOEvent(s);
+			return;
+		}
+		case EventType::Event:{
+			deserializeJson(doc, payload);
+			h->handleEvent(str(doc[0]), doc[1].as<JsonObject>());
+			return;
+		}
+		case EventType::Disconnect:{
+			h->disconnectedClient();
+			return;
+		}
+		default: return;
 	}
 }
 
@@ -44,15 +51,14 @@ send:
 	if(eventName == "disconnected") return; // temp fix
 	String s;
 	serializeJson(request["final"], s);
-	sock.sendEVENT(s);
+	sock.sendSocketIOEvent(s);
 
 }
 
 RequestHandler::RequestHandler(String host, short port, Device* device, bool useSSL){
 	myDevice = device;
-	if(useSSL) sock.beginSSL(host, port);
-	else sock.begin(host, port);
-	sock.additional = this;
+	sock.init(host, port, useSSL, "/home");
+	sock.additionalData = this;
 	sock.onEvent(RequestHandler::wsHandle);
 	device->linkHandler(this);
 	device->registerAllEvents();

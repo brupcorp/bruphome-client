@@ -6,7 +6,7 @@
 #include <ESP8266WiFi.h>
 #include <Hash.h>
 
-//#include "wshelper.h"
+#include "wshelper.h"
 
 #ifdef DEBUGSOCK
 #define Debug(...) Serial.printf(__VA_ARGS__)
@@ -22,7 +22,7 @@ enum class EventType {
 	Event,
 };
 
-typedef void (*eventHandler)(EventType, const char*, unsigned);
+typedef void (*eventHandler)(EventType, const char*, unsigned, void*);
 
 class SocketIO {
 
@@ -117,25 +117,28 @@ class SocketIO {
 		return true;
 	}
 
-	bool sendText(String text){
+	bool sendText(const String& text){
 		Debug("sending text '%s'\n", text.c_str());
 		return sendFrame(WSop_text, text.c_str(), text.length());
 	}
 
-	bool sendMessage(String text){
+	bool sendMessage(const String& text){
 		return sendText(String("4") + text);
 	}
 
 	void handleSocketIO(String payload){
 		Debug("socket io message received: %s\n", payload.c_str());
 		if(handler) {
-			switch(payload[0]){
-				case '0':
-					handler(EventType::Connect, 0, 0);
-					break;
-				case '2':
-					handler(EventType::Event, payload.c_str(), payload.length());
-					break;
+			switch(payload[0] - '0'){
+				case 0:
+					handler(EventType::Connect, 0, 0, additionalData);
+					return;
+				case 2:{
+					unsigned begin = payload.indexOf('['); // crude parser
+					unsigned len = payload.length() - begin;
+					handler(EventType::Event, &payload[begin], len, additionalData);
+					return;
+				}
 			}
 		}
 	}
@@ -148,39 +151,49 @@ class SocketIO {
 		switch(wsHeader.opCode) {
 		case WSop_text: {
 			Debug("received text: %s\n", payloadBuffer);
-			if(payloadBuffer[0] == '0') handleConnectSocketIO();
-			if(payloadBuffer[0] == '2') sendText("3"); // engine.io ping signal
-			if(payloadBuffer[0] == '4') handleSocketIO(&payloadBuffer[1]);
-			break;
+			switch (payloadBuffer[0] - '0')
+			{
+			case 0:
+				handleConnectSocketIO();
+				return;
+			case 2:
+				sendText("3"); // engine.io ping signal
+				return;
+			case 4:
+				handleSocketIO(&payloadBuffer[1]);
+				return;
+			}
 		}
 		case WSop_binary: {
 			Debug("received bin! len: %d\n", wsHeader.payloadLen);
 			// handle binary
-			break;
+			return;
 		}
 		case WSop_continuation: {
 			Debug("received continuation\n");
-			break;
+			return;
 		}
 		case WSop_ping: {
 			sendFrame(WSop_pong, payloadBuffer, wsHeader.payloadLen);
 			Debug("received ping\n");
-			break;
+			return;
 		}
 
 		case WSop_pong: {
 			Debug("received pong\n");
-			break;
+			return;
 		}
 
 		case WSop_close: {
 			Debug("received close request\n");
-			break;
+			return;
 		}
 		}
 	}
 
   public:
+  	void* additionalData = 0;
+
 	void init(String host, short port, bool ssl, String ns = "/") {
 		this->host = host;
 		this->port = port;
@@ -199,12 +212,14 @@ class SocketIO {
 
 	void onEvent(eventHandler handler) { this->handler = handler; }
 
-	bool sendSocketIOEvent(String json){
+	bool sendSocketIOEvent(const String& json){
+		Debug("sending socketio message: '%s'\n", json.c_str());
 		return sendMessage(String("2") + ns + "," + json);
 	}
 
 	void loop() {
 		if(connected()) {
+			lastConnectedState = true;
 			if(c->available() > 0) {
 				switch(state) {
 				case 0: {
@@ -300,12 +315,12 @@ class SocketIO {
 					case 3: {						  // read mask key
 						if(c->available() < 4) return; // wait for 4 mask key bytes
 						c->readBytes(curBuffPtr, 4);
-						wsHeader.maskKey = (uint8_t*)curBuffPtr;
+						wsHeader.maskKey = curBuffPtr;
 						wsReadState = 4;
 						break;
 					}
 					case 4: { // read the payload
-						if(c->available() < wsHeader.payloadLen) return;
+						if(c->available() < (int)wsHeader.payloadLen) return;
 						if(payloadBuffer) delete[] payloadBuffer;
 						payloadBuffer = new char[wsHeader.payloadLen + 1];
 						payloadBuffer[wsHeader.payloadLen] = 0; // nullterminate for safety
@@ -331,9 +346,8 @@ class SocketIO {
 				default: break;
 				}
 			}
-			lastConnectedState = true;
 		} else {
-			if(lastConnectedState && handler) handler(EventType::Disconnect, 0, 0);
+			if(lastConnectedState && handler) handler(EventType::Disconnect, 0, 0, additionalData);
 			lastConnectedState = false;
 			if(millis() - lastConnectionAttempt < waitTime * 1000) return;
 			String request = "GET " + path + " HTTP/1.1\r\n";

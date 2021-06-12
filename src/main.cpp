@@ -2,7 +2,8 @@
 #include "LittleFS.h"
 #include <ESP8266WiFi.h>
 
-#include <devices/TestDevice.h>
+
+#include <devices/NeoPixelTest.h>
 
 DynamicJsonDocument settings(1024);
 RequestHandler* sock;
@@ -38,7 +39,7 @@ void setup() {
 	Serial.print(":");
 	Serial.println(settings["server"]["port"].as<short>());
 
-	sock = new RequestHandler(settings["server"]["host"], settings["server"]["port"], new TestDevice(), settings["server"]["ssl"]);
+	sock = new RequestHandler(settings["server"]["host"], settings["server"]["port"], new NeoPixelTest(), settings["server"]["ssl"]);
 	
 	sock->onConnect([](JsonObject dataToSend){
 		dataToSend["id"] = settings["secretID"];

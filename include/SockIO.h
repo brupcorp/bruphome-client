@@ -133,6 +133,9 @@ class SocketIO {
 				case 0:
 					handler(EventType::Connect, 0, 0, additionalData);
 					return;
+				case 1:
+					c->stop(); // disconnect. TODO: check if correct namespace
+					return;
 				case 2:{
 					unsigned begin = payload.indexOf('['); // crude parser
 					unsigned len = payload.length() - begin;
@@ -155,6 +158,9 @@ class SocketIO {
 			{
 			case 0:
 				handleConnectSocketIO();
+				return;
+			case 1:
+				c->stop(); // disconnect per engine io standart
 				return;
 			case 2:
 				sendText("3"); // engine.io ping signal
@@ -186,6 +192,7 @@ class SocketIO {
 
 		case WSop_close: {
 			Debug("received close request\n");
+			c->stop(); // TODO: terminate as per RFC standart
 			return;
 		}
 		}

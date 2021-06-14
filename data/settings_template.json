@@ -1,12 +1,16 @@
 {
-	"wifi": {
-		"ssid": "WIFINAME",
-		"password": "WIFIPASS",
-		"hostname": "CONTROLLERHOSTNAME"
-	},
+	"wifi": [
+		{
+			"ssid": "WIFINAME",
+			"password": "WIFIPASS"
+		}
+	],
 	"server":{
-		"host": "https:\\SERVER",
-		"port": "PORT"
+		"host": "SERVERIP",
+		"port": "PORT",
+		"ssl": true,
+		"namespace": "SOCKETIONAMESPACE"
 	},
-	"secretID": "SETTHISTOSOMETHINGRANDOM"
+	"secretID": "SETTHISTOSOMETHINGRANDOM",
+	"hostname": "CONTROLLERHOSTNAME"
 }

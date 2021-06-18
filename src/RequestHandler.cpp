@@ -1,15 +1,13 @@
 //#define DEBUGSOCK
 #include "RequestHandler.h"
 
-struct event { String key; EventInvoker* handler; };
-
 void RequestHandler::wsHandle(EventType type, const char* payload, unsigned length, void* additional){
 	RequestHandler* h = (RequestHandler*)additional;
-	DynamicJsonDocument doc(4096); // please no stackoverflow pretty please
-	doc.to<JsonObject>();
+	h->req.clear();
+	h->req.to<JsonObject>();
 	switch(type){
 		case EventType::Connect:{
-			JsonArray final = doc["final"].to<JsonArray>();
+			JsonArray final = h->req["final"].to<JsonArray>();
 			final.add("handshake");
 			h->connectionEstablished(final.createNestedObject());
 			String s;
@@ -18,8 +16,8 @@ void RequestHandler::wsHandle(EventType type, const char* payload, unsigned leng
 			return;
 		}
 		case EventType::Event:{
-			deserializeJson(doc, payload);
-			h->handleEvent(str(doc[0]), doc[1].as<JsonObject>());
+			deserializeJson(h->req, payload);
+			h->handleEvent(h->req[0].as<String>(), h->req[1].as<JsonObject>());
 			return;
 		}
 		case EventType::Disconnect:{
@@ -39,7 +37,7 @@ void RequestHandler::handleEvent(String eventName, JsonObject request){
 
 	for(event& e : events){
 		if(eventName == e.key){
-			e.handler->Invoke(request["data"], response);
+			e.value->Invoke(request["data"], response);
 			goto send;
 		}
 	}
@@ -52,10 +50,9 @@ send:
 	String s;
 	serializeJson(request["final"], s);
 	sock.sendSocketIOEvent(s);
-
 }
 
-RequestHandler::RequestHandler(String host, short port, Device* device, bool useSSL, const char* ns){
+void RequestHandler::setup(String host, short port, Device* device, bool useSSL, const char* ns){
 	myDevice = device;
 	sock.init(host, port, useSSL, ns == 0 ? "/" : ns);
 	sock.additionalData = this;

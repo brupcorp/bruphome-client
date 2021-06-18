@@ -1,32 +1,34 @@
 #include <Arduino.h>
-#include "LittleFS.h"
 #include <ESP8266WiFi.h>
 #include <ESP8266WiFiMulti.h>
-
 typedef const char* cstr;
 
 ESP8266WiFiMulti wifiMulti;
 
 #include <devices/TestDevice.h>
 
-DynamicJsonDocument doc(1024);
+StaticJsonDocument<1024> doc;
 JsonObject root;
-RequestHandler* sock;
+RequestHandler sock;
+byte settings[1024];
+
+extern "C" uint32_t _FS_start;
+#define FS_REL_ADDR ((uint32_t) (&_FS_start) - 0x40200000)
 
 void setup() {
 	Serial.begin(9600);
-	LittleFS.begin();
 	Serial.println();
 	delay(1000);
 
-	File f = LittleFS.open("/settings.json", "r");
-	if(!f) { Serial.println("config load failed! halting!"); delay(UINT_MAX); }
+	ESP.flashRead(FS_REL_ADDR, settings, 1024);
 
-	deserializeJson(doc, f.readString());
-	f.close();
+	if(deserializeJson(doc, settings) != DeserializationError::Ok) {
+		Serial.println("config load failed! halting!");
+		delay(UINT_MAX);
+	}
 
 	root = doc.as<JsonObject>();
-
+	
 	WiFi.hostname((cstr)root["hostname"]);
 
 	JsonArray wifiData = root["wifi"];
@@ -44,14 +46,14 @@ void setup() {
 
 	JsonObject srv = root["server"];
 
-	sock = new RequestHandler(srv["host"], srv["port"], new TestDevice(), srv["ssl"], srv["namespace"]);
+	sock.setup(srv["host"], srv["port"], new TestDevice(), srv["ssl"], srv["namespace"]);
 	
-	sock->onConnect([](JsonObject dataToSend){
+	sock.onConnect([](JsonObject dataToSend){
 		dataToSend["id"] = root["secretID"];
 		Serial.println("Connected to Server!");
 	});
 
-	sock->onDisconnect([](){
+	sock.onDisconnect([](){
 		Serial.println("Server Disconnected!");
 	});
 
@@ -59,6 +61,4 @@ void setup() {
 
 }
 
-void loop() {
-	sock->loop();
-}
+void loop() { sock.loop(); }

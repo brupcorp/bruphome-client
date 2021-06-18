@@ -4,6 +4,7 @@
 #include "ArduinoJson.h"
 
 // fuck c++ and templates
+
 class EventInvoker{
 	private:
 		void* helperData;

@@ -9,13 +9,12 @@
 #include "EventInvoker.h"
 #include "Task.h"
 
-#define str(v) (v.as<String>())
+template <class T, class K> struct pair { T key; K value; };
 
 typedef void (*event_handler_out)(JsonObject);
 typedef void (*callback)();
 typedef void (*invoker)(JsonObjectConst,JsonObject,void*);
-
-struct event;
+typedef pair<String, EventInvoker*> event;
 
 class RequestHandler{
 	private:
@@ -25,11 +24,13 @@ class RequestHandler{
 		std::vector<Task*> scheduler;
 		SocketIO sock;
 		Device* myDevice;
+		StaticJsonDocument<2048> req;
 
 		static void wsHandle(EventType type, const char* payload, unsigned length, void* additional);
 		void handleEvent(String event, JsonObject data);
 	public:
-		RequestHandler(String host, short port, Device* device, bool useSSL, const char* = "/");
+		// allow for static allocation and prepare object setup later
+		void setup(String host, short port, Device* device, bool useSSL, const char* = "/");
 		void onConnect(event_handler_out handler);
 		void onDisconnect(callback handler);
 		void loop();

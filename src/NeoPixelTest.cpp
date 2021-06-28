@@ -1,10 +1,22 @@
 #include <devices/NeoPixelTest.h>
 #include <Adafruit_NeoPixel.h>
 
+void init(JsonObjectConst data, JsonObject result){
+	
+
+}
 #define PIN D1
 #define NUMPIXELS 20 
 
 Adafruit_NeoPixel pixels(NUMPIXELS, D1, NEO_GRB + NEO_KHZ800);
+
+int NeoPixelTest::HexToInt(String data){
+	const char *str = data.c_str();
+	int r, g, b;
+	sscanf(str, "%02x%02x%02x", &r, &g, &b);
+	int ColorInt = r<<16 | g<<8 | b;
+	return ColorInt;
+}
 
 void NeoPixelTest::testHandler(JsonObjectConst data, JsonObject result){
 	Serial.print("got test! data: ");
@@ -17,7 +29,7 @@ void NeoPixelTest::LEDOn(JsonObjectConst data, JsonObject result){
 
 	pixels.begin();
 	if(data.containsKey("RGBColor") && data.containsKey("LEDNum")){
-		pixels.setPixelColor(data["LEDNum"], data["RGBColor"]);
+		pixels.setPixelColor(data["LEDNum"], HexToInt(data["RGBColor"]));
 
 		pixels.show();
 		result["LEDStatus"] = "an";
@@ -29,7 +41,7 @@ void NeoPixelTest::AllOn(JsonObjectConst data, JsonObject result){
 	pixels.begin();
 	if(data.containsKey("RGBColor")){
 		for(int i = 0; i<NUMPIXELS; i++){
-		pixels.setPixelColor(i, data["RGBColor"]);
+			pixels.setPixelColor(i, HexToInt(data["RGBColor"]));
 		};
 		pixels.show();
 		result["LEDStatus"] = "an";

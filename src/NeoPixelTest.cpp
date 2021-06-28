@@ -1,13 +1,14 @@
 #include <devices/NeoPixelTest.h>
 #include <Adafruit_NeoPixel.h>
 #include <helper.h>
+#include <colorUtil.h>
 
 void init(JsonObjectConst data, JsonObject result){
 	
 
 }
 #define PIN D1
-#define NUMPIXELS 20 
+#define NUMPIXELS 50 
 
 Adafruit_NeoPixel pixels(NUMPIXELS, D1, NEO_GRB + NEO_KHZ800);
 
@@ -79,18 +80,42 @@ void NeoPixelTest::AllRainbow(){
 	} else {
 		RBColorNum = 0;
 	}
-	
-	
+}
 
+void NeoPixelTest::OnAllRBfade(JsonObjectConst data, JsonObject result){
+	SuspAll();
+	TaskAllRBfade->setSuspended(false);
+	result["Suspended:"] = "aus";
+}
+
+void NeoPixelTest::AllRBfade(){
+
+    hsv color;
+    color.h = colorInit;
+    color.s = 1;
+    color.v = 0.8;
+
+    pixels.begin();
+    for(int i = 0; i<NUMPIXELS; i++){
+        rgb converted = hsv2rgb(color);
+        pixels.setPixelColor(i, converted.r * 255, converted.g * 255, converted.b * 255);
+        color.h = ((int)color.h + 7) % 360; 
+    };
+    
+    pixels.show();
+    colorInit = (colorInit + 1) % 360;
+    
 }
 
 void NeoPixelTest::SuspAll(){
 	TaskAllRainbow->setSuspended(true);
+	TaskAllRBfade->setSuspended(true);
 
 }
 
 void NeoPixelTest::registerAllEvents(){
 	TaskAllRainbow = new Task(bindTask(NeoPixelTest::AllRainbow), 1000);
+	TaskAllRBfade = new Task(bindTask(NeoPixelTest::AllRBfade), 10);
 	SuspAll();
 
     handler->registerEvent("test", bindEvent(NeoPixelTest::testHandler));
@@ -99,6 +124,8 @@ void NeoPixelTest::registerAllEvents(){
 	handler->registerEvent("NeoAllOff", bindEvent(NeoPixelTest::AllOff));
 
 	handler->registerEvent("OnAllRB", bindEvent(NeoPixelTest::OnAllRB));
+	handler->registerEvent("OnAllRBFade", bindEvent(NeoPixelTest::OnAllRBfade));
 	handler->registerRepeatingTask(TaskAllRainbow);	
+	handler->registerRepeatingTask(TaskAllRBfade);
 
 }

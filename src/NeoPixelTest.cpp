@@ -1,5 +1,6 @@
 #include <devices/NeoPixelTest.h>
 #include <Adafruit_NeoPixel.h>
+#include <helper.h>
 
 void init(JsonObjectConst data, JsonObject result){
 	
@@ -10,15 +11,10 @@ void init(JsonObjectConst data, JsonObject result){
 
 Adafruit_NeoPixel pixels(NUMPIXELS, D1, NEO_GRB + NEO_KHZ800);
 
-int NeoPixelTest::HexToInt(String data){
-	const char *str = data.c_str();
-	int r, g, b;
-	sscanf(str, "%02x%02x%02x", &r, &g, &b);
-	int ColorInt = r<<16 | g<<8 | b;
-	return ColorInt;
-}
 
 void NeoPixelTest::testHandler(JsonObjectConst data, JsonObject result){
+	SuspAll();
+
 	Serial.print("got test! data: ");
 	serializeJson(data, Serial);
 	Serial.println();
@@ -26,10 +22,11 @@ void NeoPixelTest::testHandler(JsonObjectConst data, JsonObject result){
 }
 
 void NeoPixelTest::LEDOn(JsonObjectConst data, JsonObject result){
+	SuspAll();
 
 	pixels.begin();
 	if(data.containsKey("RGBColor") && data.containsKey("LEDNum")){
-		pixels.setPixelColor(data["LEDNum"], HexToInt(data["RGBColor"]));
+		pixels.setPixelColor(data["LEDNum"], helper::HexToInt(data["RGBColor"]));
 
 		pixels.show();
 		result["LEDStatus"] = "an";
@@ -37,11 +34,12 @@ void NeoPixelTest::LEDOn(JsonObjectConst data, JsonObject result){
 }
 
 void NeoPixelTest::AllOn(JsonObjectConst data, JsonObject result){
+	SuspAll();
 
 	pixels.begin();
 	if(data.containsKey("RGBColor")){
 		for(int i = 0; i<NUMPIXELS; i++){
-			pixels.setPixelColor(i, HexToInt(data["RGBColor"]));
+			pixels.setPixelColor(i, helper::HexToInt(data["RGBColor"]));
 		};
 		pixels.show();
 		result["LEDStatus"] = "an";
@@ -52,6 +50,7 @@ void NeoPixelTest::AllOn(JsonObjectConst data, JsonObject result){
 }
 
 void NeoPixelTest::AllOff(JsonObjectConst data, JsonObject result){
+	SuspAll();
 
 	pixels.begin();
 	pixels.clear();
@@ -62,21 +61,44 @@ void NeoPixelTest::AllOff(JsonObjectConst data, JsonObject result){
 
 }
 
+void NeoPixelTest::OnAllRB(JsonObjectConst data, JsonObject result){
+	SuspAll();
+	TaskAllRainbow->setSuspended(false);
+	result["Suspended:"] = "aus";
+}
+
 void NeoPixelTest::AllRainbow(){
-	uint64 curDelay = TaskAllRainbow->getDelay();
+	int RBColors[6] = {0xfcba03, 0xa80816, 0xe100ff, 0x0cad0c, 0x070b87, 0x07f58a};
+	pixels.begin();
+	for(int i = 0; i<NUMPIXELS; i++){
+		pixels.setPixelColor(i, RBColors[RBColorNum]);
+	};
+	pixels.show();
+	if(RBColorNum < 5){
+		RBColorNum = RBColorNum + 1;
+	} else {
+		RBColorNum = 0;
+	}
+	
 	
 
+}
 
-	TaskAllRainbow->setDelay(curDelay + 500);
+void NeoPixelTest::SuspAll(){
+	TaskAllRainbow->setSuspended(true);
+
 }
 
 void NeoPixelTest::registerAllEvents(){
+	TaskAllRainbow = new Task(bindTask(NeoPixelTest::AllRainbow), 1000);
+	SuspAll();
 
     handler->registerEvent("test", bindEvent(NeoPixelTest::testHandler));
     handler->registerEvent("NeoPOn", bindEvent(NeoPixelTest::LEDOn));
 	handler->registerEvent("NeoAllOn", bindEvent(NeoPixelTest::AllOn));
 	handler->registerEvent("NeoAllOff", bindEvent(NeoPixelTest::AllOff));
 
-	TaskAllRainbow = new Task(bindTask(NeoPixelTest::AllRainbow), 1000);
+	handler->registerEvent("OnAllRB", bindEvent(NeoPixelTest::OnAllRB));
+	handler->registerRepeatingTask(TaskAllRainbow);	
 
 }

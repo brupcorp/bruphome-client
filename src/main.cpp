@@ -35,7 +35,10 @@ void setup() {
 		wifiMulti.addAP(station["ssid"], station["password"]);
 
 	Serial.print("Connecting to Wifi...");
-	while(wifiMulti.run() != WL_CONNECTED) Serial.print(".");
+	while(wifiMulti.run() != WL_CONNECTED) {
+		delay(500); // doesn't flood every time but just to be sure
+		Serial.print(".");
+	}
 
 	Serial.println();
 	Serial.printf("Connected to '%s'! IP Address: '%s'\n", WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());

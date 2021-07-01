@@ -2,8 +2,10 @@
 #define NEOPIXELTESTHDR
 
 #include "../Device.h"
+#include "../Init.h"
 
-class NeoPixelTest : public Device {
+class NeoPixelTest : public Init {
+    public:
     int RBColorNum = 0;
     int colorInit = 0;
 
@@ -20,6 +22,7 @@ class NeoPixelTest : public Device {
     void OnAllRB(JsonObjectConst data, JsonObject result);
     void AllRainbow();
 
+    static void reload();
     void SuspAll();
     
     Task* TaskAllRBfade;

@@ -2,12 +2,11 @@
 #include <Adafruit_NeoPixel.h>
 #include <helper.h>
 #include <colorUtil.h>
+#include <Init.h>
 
-#define PIN D1
-#define NUMPIXELS 50 
+//TODO: On clear every LED possible clearen not just the numPixels
 
-Adafruit_NeoPixel pixels(NUMPIXELS, D1, NEO_GRB + NEO_KHZ800);
-
+Adafruit_NeoPixel pixels(Init::numPixels, Init::pin, NEO_GRB + NEO_KHZ800);
 
 void NeoPixelTest::testHandler(JsonObjectConst data, JsonObject result){
 	SuspAll();
@@ -35,7 +34,7 @@ void NeoPixelTest::AllOn(JsonObjectConst data, JsonObject result){
 
 	pixels.begin();
 	if(data.containsKey("RGBColor")){
-		for(int i = 0; i<NUMPIXELS; i++){
+		for(int i = 0; i<Init::numPixels; i++){
 			pixels.setPixelColor(i, helper::HexToInt(data["RGBColor"]));
 		};
 		pixels.show();
@@ -67,7 +66,7 @@ void NeoPixelTest::OnAllRB(JsonObjectConst data, JsonObject result){
 void NeoPixelTest::AllRainbow(){
 	int RBColors[6] = {0xfcba03, 0xa80816, 0xe100ff, 0x0cad0c, 0x070b87, 0x07f58a};
 	pixels.begin();
-	for(int i = 0; i<NUMPIXELS; i++){
+	for(int i = 0; i<Init::numPixels; i++){
 		pixels.setPixelColor(i, RBColors[RBColorNum]);
 	};
 	pixels.show();
@@ -92,7 +91,7 @@ void NeoPixelTest::AllRBfade(){
     color.v = 0.8;
 
     pixels.begin();
-    for(int i = 0; i<NUMPIXELS; i++){
+    for(int i = 0; i<Init::numPixels; i++){
         rgb converted = hsv2rgb(color);
         pixels.setPixelColor(i, converted.r * 255, converted.g * 255, converted.b * 255);
         color.h = ((int)color.h + 7) % 360; 
@@ -109,7 +108,13 @@ void NeoPixelTest::SuspAll(){
 
 }
 
+void NeoPixelTest::reload(){
+	pixels.setPin(Init::pin);
+	pixels.updateLength(Init::numPixels);
+}
+
 void NeoPixelTest::registerAllEvents(){
+	Init::registerAllEvents();
 	TaskAllRainbow = new Task(bindTask(NeoPixelTest::AllRainbow), 1000);
 	TaskAllRBfade = new Task(bindTask(NeoPixelTest::AllRBfade), 10);
 	SuspAll();

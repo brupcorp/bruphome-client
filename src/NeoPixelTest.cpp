@@ -3,10 +3,6 @@
 #include <helper.h>
 #include <colorUtil.h>
 
-void init(JsonObjectConst data, JsonObject result){
-	
-
-}
 #define PIN D1
 #define NUMPIXELS 50 
 

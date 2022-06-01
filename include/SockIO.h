@@ -311,9 +311,8 @@ class SocketIO {
 						if(c->available() < 8) return; // wait for 8 additional bytes
 						c->readBytes(curBuffPtr, 8);
 
-						if(*((unsigned*)buffer[2]) != 0) wsHeader.payloadLen = 0xFFFFFFFF; // really too big!
-						else
-							wsHeader.payloadLen = *((unsigned*)buffer[2]);
+						if(*((unsigned*)curBuffPtr) != 0) wsHeader.payloadLen = 0xFFFFFFFF; // really too big!
+						else wsHeader.payloadLen = *((unsigned*)curBuffPtr);
 
 						curBuffPtr += 8;
 

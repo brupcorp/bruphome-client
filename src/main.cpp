@@ -1,11 +1,17 @@
 #include <Arduino.h>
 #include "LittleFS.h"
 #include <ESP8266WiFi.h>
+#include <ESP8266WiFiMulti.h>
+
+typedef const char* cstr;
+
+ESP8266WiFiMulti wifiMulti;
 
 
 #include <devices/NeoPixelTest.h>
 
-DynamicJsonDocument settings(1024);
+DynamicJsonDocument doc(1024);
+JsonObject root;
 RequestHandler* sock;
 
 void setup() {
@@ -17,32 +23,35 @@ void setup() {
 	File f = LittleFS.open("/settings.json", "r");
 	if(!f) { Serial.println("config load failed! halting!"); delay(UINT_MAX); }
 
-	deserializeJson(settings, f.readString());
+	deserializeJson(doc, f.readString());
 	f.close();
 
-	JsonObject wifi = settings["wifi"];
+	root = doc.as<JsonObject>();
 
-	WiFi.hostname(str(wifi["hostname"]));
-	WiFi.begin(str(wifi["ssid"]), str(wifi["password"]));
+	WiFi.hostname((cstr)root["hostname"]);
 
-	Serial.print("Connecting");
-	while(WiFi.status() != WL_CONNECTED) {
-		delay(500);
+	JsonArray wifiData = root["wifi"];
+
+	for(JsonObject station : wifiData)
+		wifiMulti.addAP(station["ssid"], station["password"]);
+
+	Serial.print("Connecting to Wifi...");
+	while(wifiMulti.run() != WL_CONNECTED) {
+		delay(500); // doesn't flood every time but just to be sure
 		Serial.print(".");
 	}
+
 	Serial.println();
-	Serial.print("Connected! IP address: ");
-	Serial.println(WiFi.localIP());
+	Serial.printf("Connected to '%s'! IP Address: '%s'\n", WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
 
-	Serial.print("initiating socket.io connection at ");
-	Serial.print(str(settings["server"]["host"]));
-	Serial.print(":");
-	Serial.println(settings["server"]["port"].as<short>());
+	Serial.printf("Connecting to Socket.IO Server at %s:%d ...\n", (cstr)root["server"]["host"], (short)root["server"]["port"]);
 
-	sock = new RequestHandler(settings["server"]["host"], settings["server"]["port"], new NeoPixelTest(), settings["server"]["ssl"]);
+	JsonObject srv = root["server"];
+
+	sock = new RequestHandler(srv["host"], srv["port"], new NeoPixelTest(), srv["ssl"], srv["namespace"]);
 	
 	sock->onConnect([](JsonObject dataToSend){
-		dataToSend["id"] = settings["secretID"];
+		dataToSend["id"] = root["secretID"];
 		Serial.println("Connected to Server!");
 	});
 

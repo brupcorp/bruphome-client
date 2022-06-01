@@ -29,7 +29,7 @@ class RequestHandler{
 		static void wsHandle(EventType type, const char* payload, unsigned length, void* additional);
 		void handleEvent(String event, JsonObject data);
 	public:
-		RequestHandler(String host, short port, Device* device, bool useSSL);
+		RequestHandler(String host, short port, Device* device, bool useSSL, const char* = "/");
 		void onConnect(event_handler_out handler);
 		void onDisconnect(callback handler);
 		void loop();

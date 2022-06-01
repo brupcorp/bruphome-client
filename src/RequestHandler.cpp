@@ -55,9 +55,9 @@ send:
 
 }
 
-RequestHandler::RequestHandler(String host, short port, Device* device, bool useSSL){
+RequestHandler::RequestHandler(String host, short port, Device* device, bool useSSL, const char* ns){
 	myDevice = device;
-	sock.init(host, port, useSSL, "/home");
+	sock.init(host, port, useSSL, ns == 0 ? "/" : ns);
 	sock.additionalData = this;
 	sock.onEvent(RequestHandler::wsHandle);
 	device->linkHandler(this);
